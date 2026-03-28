@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone         VARCHAR(20),
   password      VARCHAR(255)  NOT NULL,          -- bcrypt hash
   license_image VARCHAR(300),                    -- Cloudinary URL
+  is_verified   BOOLEAN       DEFAULT FALSE,     -- TRUE after driving license uploaded
   created_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -19,7 +20,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS vendors (
   vendor_id  SERIAL PRIMARY KEY,
   name       VARCHAR(100) NOT NULL,
+  email      VARCHAR(150) UNIQUE NOT NULL,       -- login email
   phone      VARCHAR(20),
+  password   VARCHAR(255) NOT NULL,              -- bcrypt hash
   address    TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

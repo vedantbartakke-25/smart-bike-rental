@@ -32,7 +32,15 @@ const upload  = multer({
 });
 
 // ── POST /api/upload-license ─────────────────────────────────
-router.post('/upload-license', protect, upload.single('license'), async (req, res) => {
+router.post('/upload-license', protect, (req, res, next) => {
+  // Run multer and intercept its errors so they return JSON (not 500)
+  upload.single('license')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded.' });
@@ -58,9 +66,12 @@ router.post('/upload-license', protect, upload.single('license'), async (req, re
     // Save Cloudinary URL to user record
     const updated = await UserModel.updateLicenseImage(req.user.userId, result.secure_url);
 
+    // Mark user as KYC-verified
+    await UserModel.setVerified(req.user.userId);
+
     res.json({
       message: 'License uploaded successfully.',
-      imageUrl: result.secure_url,
+      license_image: result.secure_url,
       user: updated,
     });
   } catch (err) {

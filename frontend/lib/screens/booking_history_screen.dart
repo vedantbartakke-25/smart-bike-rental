@@ -37,10 +37,23 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'active':    return Colors.blue;
-      case 'completed': return Colors.green;
-      case 'cancelled': return Colors.red;
-      default:          return Colors.orange; // pending
+      case 'confirmed':  return const Color(0xFF00897B); // teal
+      case 'approved':   return const Color(0xFF00897B); // legacy — same teal
+      case 'active':     return Colors.blue;
+      case 'completed':  return Colors.green;
+      case 'cancelled':  return Colors.red;
+      default:           return Colors.orange; // pending (legacy)
+    }
+  }
+
+  String _statusEmoji(String status) {
+    switch (status) {
+      case 'confirmed':  return '✅';
+      case 'approved':   return '✅'; // legacy
+      case 'active':     return '🔵';
+      case 'completed':  return '🟢';
+      case 'cancelled':  return '🔴';
+      default:           return '🟡'; // pending (legacy)
     }
   }
 
@@ -120,7 +133,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(color: _statusColor(status).withOpacity(0.4)),
                                   ),
-                                  child: Text(status.toUpperCase(),
+                                  child: Text(
+                                    '${_statusEmoji(status)} ${status.toUpperCase()}',
                                     style: TextStyle(
                                       color: _statusColor(status),
                                       fontWeight: FontWeight.w600,

@@ -145,6 +145,15 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     onPressed: () => Navigator.pushNamed(context, '/bikes'),
                   ),
                 ),
+                const SizedBox(height: 4),
+                // ── View Requirements Link ───────────────────
+                Center(
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.checklist_rtl, color: Colors.white70),
+                    label: const Text('View Requirements', style: TextStyle(color: Colors.white70)),
+                    onPressed: () => Navigator.pushNamed(context, '/requirements'),
+                  ),
+                ),
               ],
             ),
           ),

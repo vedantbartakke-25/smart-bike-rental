@@ -14,6 +14,11 @@ class BikeDetailScreen extends StatelessWidget {
     // Build recommendation tip based on bike data
     final tip = RecommendationService.getTip(bike);
 
+    // If bike came from Available Bikes screen it already passed the server-side
+    // time-overlap check — treat it as available regardless of the boolean flag.
+    final bool hasTimeContext = bike.containsKey('selected_start_time');
+    final bool isAvailable   = hasTimeContext || bike['availability'] == true;
+
     return Scaffold(
       appBar: AppBar(title: Text(bike['model'] ?? 'Bike Details')),
       body: SingleChildScrollView(
@@ -46,8 +51,8 @@ class BikeDetailScreen extends StatelessWidget {
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                       ),
                       _Badge(
-                        label: bike['availability'] == true ? 'Available' : 'Booked',
-                        color: bike['availability'] == true ? Colors.green : Colors.red,
+                        label: isAvailable ? 'Available' : 'Booked',
+                        color: isAvailable ? Colors.green : Colors.red,
                       ),
                     ],
                   ),
@@ -106,7 +111,7 @@ class BikeDetailScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.calendar_month),
                       label: const Text('Book Now', style: TextStyle(fontSize: 16)),
-                      onPressed: bike['availability'] == true
+                      onPressed: isAvailable
                         ? () => Navigator.pushNamed(context, '/booking', arguments: bike)
                         : null,
                     ),

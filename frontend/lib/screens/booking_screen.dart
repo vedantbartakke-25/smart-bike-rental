@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import 'kyc_upload_screen.dart';
+import 'agreement_screen.dart';
+import 'payment_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -78,6 +81,47 @@ class _BookingScreenState extends State<BookingScreen> {
     setState(() { _isLoading = true; _error = null; });
 
     try {
+      // ── KYC CHECK: verify user before booking ─────────────────
+      final profile = await ApiService.getUserProfile();
+      final isVerified = profile['is_verified'] == true;
+      if (!isVerified) {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        // Navigate to KYC screen and await result
+        final uploaded = await Navigator.pushNamed(context, '/kyc');
+        if (uploaded == true) {
+          // User just uploaded — auto-retry booking
+          _confirmBooking();
+        } else {
+          setState(() => _error = 'Please upload your driving license to continue.');
+        }
+        return;
+      }
+
+      // ── Verified — show Rental Agreement before API call ──────
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      final agreed = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (_) => const AgreementScreen()),
+      );
+      if (agreed != true) return; // user declined or backed out
+
+      // ── Payment step ───────────────────────────────
+      if (!mounted) return;
+      final paid = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PaymentScreen(
+            totalAmount: _estimatedPrice ?? 0.0,
+          ),
+        ),
+      );
+      if (paid != true) return; // user left payment screen
+
+      setState(() { _isLoading = true; _error = null; });
+
+      // ── Proceed with booking API call ─────────────────────
       await ApiService.createBooking(
         bikeId:    _bike['bike_id'],
         startTime: _startTime!,
@@ -108,7 +152,7 @@ class _BookingScreenState extends State<BookingScreen> {
     } catch (e) {
       setState(() => _error = e.toString().replaceAll('Exception: ', ''));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

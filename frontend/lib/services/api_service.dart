@@ -1,6 +1,8 @@
 // services/api_service.dart — Centralized HTTP client for backend API calls
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
@@ -76,12 +78,24 @@ class ApiService {
   // BIKES
   // ────────────────────────────────────────────────────────────
 
-  /// Get all available bikes
+  /// Get all bikes (no time filter — for browsing / vendor use)
   static Future<List<dynamic>> getAllBikes() async {
     final response = await http.get(
       Uri.parse('$baseUrl/bikes'),
       headers: await _authHeaders(),
     );
+    final data = _handleResponse(response);
+    return data['bikes'] as List<dynamic>;
+  }
+
+  /// Get bikes available for a specific time window (server-side overlap check)
+  static Future<List<dynamic>> getAvailableBikes(
+      String startTime, String endTime) async {
+    final uri = Uri.parse('$baseUrl/bikes').replace(queryParameters: {
+      'start_time': startTime,
+      'end_time':   endTime,
+    });
+    final response = await http.get(uri, headers: await _authHeaders());
     final data = _handleResponse(response);
     return data['bikes'] as List<dynamic>;
   }
@@ -126,6 +140,47 @@ class ApiService {
     );
     final data = _handleResponse(response);
     return data['bookings'] as List<dynamic>;
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // USER PROFILE & KYC
+  // ────────────────────────────────────────────────────────────
+
+  /// Get logged-in user's profile including KYC verification status
+  static Future<Map<String, dynamic>> getUserProfile() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/profile'),
+      headers: await _authHeaders(),
+    );
+    return _handleResponse(response);
+  }
+
+  /// Upload driving license image to backend (multipart/form-data)
+  static Future<Map<String, dynamic>> uploadLicense(
+    Uint8List imageBytes,
+    String fileName,
+  ) async {
+    final uri     = Uri.parse('$baseUrl/upload-license');
+    final request = http.MultipartRequest('POST', uri);
+    final token   = await getToken();
+
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    // Derive MIME subtype from the file extension
+    final ext     = fileName.split('.').last.toLowerCase();
+    final subtype = ['png', 'gif', 'webp'].contains(ext) ? ext : 'jpeg';
+
+    request.files.add(http.MultipartFile.fromBytes(
+      'license',
+      imageBytes,
+      filename: fileName,
+      contentType: MediaType('image', subtype),
+    ));
+
+    final streamed  = await request.send();
+    final response  = await http.Response.fromStream(streamed);
+    return _handleResponse(response);
   }
 
   // ────────────────────────────────────────────────────────────

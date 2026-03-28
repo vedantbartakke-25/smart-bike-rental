@@ -85,4 +85,21 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// ── GET /api/user/profile ────────────────────────────────────
+const getProfile = async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    res.json({
+      user_id:       user.user_id,
+      name:          user.name,
+      license_image: user.license_image || null,
+      is_verified:   user.is_verified || false,
+    });
+  } catch (err) {
+    console.error('getProfile error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch profile.' });
+  }
+};
+
+module.exports = { register, login, getProfile };

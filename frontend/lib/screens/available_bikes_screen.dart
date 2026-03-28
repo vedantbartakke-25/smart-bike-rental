@@ -34,10 +34,9 @@ class _AvailableBikesScreenState extends State<AvailableBikesScreen> {
   Future<void> _fetchBikes() async {
     setState(() { _isLoading = true; _error = null; });
     try {
-      final allBikes = await ApiService.getAllBikes();
-      // Show only available bikes
-      final available = allBikes.where((b) => b['availability'] == true).toList();
-      setState(() { _bikes = available; });
+      // Pass times to backend — server filters by time-based availability
+      final bikes = await ApiService.getAvailableBikes(_startTime, _endTime);
+      setState(() { _bikes = bikes; });
     } catch (e) {
       setState(() { _error = e.toString().replaceAll('Exception: ', ''); });
     } finally {

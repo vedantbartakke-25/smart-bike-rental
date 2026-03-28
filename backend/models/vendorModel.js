@@ -78,7 +78,8 @@ const VendorModel = {
   async getVendorBookings(vendorId) {
     const result = await pool.query(
       `SELECT bk.booking_id, bk.start_time, bk.end_time, bk.status, bk.total_price, bk.created_at,
-              u.name  AS user_name,  u.email AS user_email,  u.phone AS user_phone,
+              u.name        AS user_name,  u.email AS user_email, u.phone AS user_phone,
+              u.is_verified AS is_verified,
               b.model AS bike_model, b.bike_id, b.bike_type
        FROM bookings bk
        JOIN bikes    b ON bk.bike_id  = b.bike_id

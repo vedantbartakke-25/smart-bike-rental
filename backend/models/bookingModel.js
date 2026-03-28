@@ -6,7 +6,7 @@ const BookingModel = {
   async create({ userId, bikeId, startTime, endTime, totalPrice }) {
     const result = await pool.query(
       `INSERT INTO bookings (user_id, bike_id, start_time, end_time, total_price, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending')
+       VALUES ($1, $2, $3, $4, $5, 'confirmed')
        RETURNING *`,
       [userId, bikeId, startTime, endTime, totalPrice]
     );

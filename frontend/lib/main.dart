@@ -9,6 +9,10 @@ import 'screens/booking_history_screen.dart';
 import 'screens/user_home_screen.dart';
 import 'screens/select_rental_time_screen.dart';
 import 'screens/available_bikes_screen.dart';
+import 'screens/kyc_upload_screen.dart';
+import 'screens/requirements_screen.dart';
+import 'screens/agreement_screen.dart';
+import 'screens/payment_screen.dart';
 
 import 'vendor/vendor_login_screen.dart';
 import 'vendor/vendor_register_screen.dart';
@@ -70,6 +74,11 @@ class SmartBikeRentalApp extends StatelessWidget {
         '/vendor-register': (_) => const VendorRegisterScreen(),
         '/vendor-dashboard':(_) => const VendorDashboardScreen(),
         '/vendor-add-bike': (_) => const AddEditBikeScreen(),
+        '/kyc':             (_) => const KycUploadScreen(),
+        '/requirements':    (_) => const RequirementsScreen(),
+        '/agreement':       (_) => const AgreementScreen(),
+        // Payment screen receives totalAmount via Navigator.push, not named route
+        // but register it as fallback for direct navigation if ever needed
       },
     );
   }

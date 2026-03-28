@@ -1,6 +1,7 @@
 // controllers/bookingController.js — Create & list bookings
 const BookingModel = require('../models/bookingModel');
 const BikeModel    = require('../models/bikeModel');
+const UserModel    = require('../models/userModel');
 
 // ── POST /api/bookings ───────────────────────────────────────
 const createBooking = async (req, res) => {
@@ -13,6 +14,15 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ error: 'bike_id, start_time, and end_time are required.' });
     }
 
+    // 2. KYC check — user must have uploaded driving license
+    const user = await UserModel.findById(userId);
+    if (!user || !user.is_verified) {
+      return res.status(403).json({
+        error: 'User must upload driving license before booking.',
+        kyc_required: true,
+      });
+    }
+
     // 2. Parse timestamps
     const start = new Date(start_time);
     const end   = new Date(end_time);
@@ -20,11 +30,15 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ error: 'Invalid time range. end_time must be after start_time.' });
     }
 
-    // 3. Check bike exists & is available
+    // 3. Check bike exists and has no overlapping active/approved bookings
     const bike = await BikeModel.getById(bike_id);
     if (!bike) return res.status(404).json({ error: 'Bike not found.' });
-    if (!bike.availability) {
-      return res.status(409).json({ error: 'Bike is not available for the selected period.' });
+
+    // DB-level time-overlap guard (same logic as getAvailable)
+    const available = await BikeModel.getAvailable(start, end);
+    const bikeIsAvailable = available.some(b => b.bike_id === parseInt(bike_id));
+    if (!bikeIsAvailable) {
+      return res.status(409).json({ error: 'Bike is already booked for the selected time period.' });
     }
 
     // 4. Calculate total price (based on hours, then scale to days if needed)
@@ -43,9 +57,6 @@ const createBooking = async (req, res) => {
       endTime: end,
       totalPrice: totalPrice.toFixed(2),
     });
-
-    // 6. Mark bike as unavailable
-    await BikeModel.setAvailability(bike_id, false);
 
     res.status(201).json({ message: 'Booking created successfully.', booking });
   } catch (err) {

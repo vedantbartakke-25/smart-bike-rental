@@ -25,7 +25,7 @@ const UserModel = {
   // Find a user by their primary key
   async findById(userId) {
     const result = await pool.query(
-      'SELECT user_id, name, email, phone, license_image, created_at FROM users WHERE user_id = $1',
+      'SELECT user_id, name, email, phone, license_image, is_verified, created_at FROM users WHERE user_id = $1',
       [userId]
     );
     return result.rows[0];
@@ -39,6 +39,14 @@ const UserModel = {
       [imageUrl, userId]
     );
     return result.rows[0];
+  },
+
+  // Mark user as KYC-verified (called after license upload)
+  async setVerified(userId) {
+    await pool.query(
+      'UPDATE users SET is_verified = TRUE WHERE user_id = $1',
+      [userId]
+    );
   },
 };
 

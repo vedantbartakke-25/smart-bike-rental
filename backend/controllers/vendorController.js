@@ -223,7 +223,7 @@ const updateBookingStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['pending', 'approved', 'active', 'completed', 'cancelled'];
+    const validStatuses = ['confirmed', 'active', 'completed', 'cancelled'];
     if (!status || !validStatuses.includes(status))
       return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
 
