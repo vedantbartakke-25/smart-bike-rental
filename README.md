@@ -1,5 +1,13 @@
 # 🚴 Smart Bike Rental — Setup & Run Guide
 
+## 🌟 Features
+
+*   **Customer App**: Browser bikes, select rental times, time-based availability checking, and auto-confirmed bookings.
+*   **Vendor Portal**: Vendors can register, login, add their bikes, and manage bookings (Start Ride, Mark Completed, Cancel).
+*   **KYC Verification**: Mandatory Driving License upload via Cloudinary before securing a booking.
+*   **Simulated Payment Flow**: Supports UPI, Credit/Debit Card, Wallet, and Cash on Delivery (COD).
+*   **Smart Availability**: Robust, time-based SQL overlap validation prevents double bookings.
+
 ## Prerequisites
 
 | Tool | Version |
@@ -29,16 +37,16 @@ CREATE DATABASE bike_rental_db;
 psql -U postgres -d bike_rental_db -f backend/config/schema.sql
 ```
 
+> **Note**: The backend runs auto-migrations on startup (`config/db.js`) to apply column updates automatically (like KYC flags).
 > **Seed sample data** (optional — paste in psql):
 > ```sql
-> INSERT INTO vendors (name, phone, address) VALUES ('BikePro Rentals', '9876543210', 'Pune, MH');
+> INSERT INTO vendors (name, phone, address, email, password) 
+> VALUES ('BikePro Rentals', '9876543210', 'Pune, MH', 'vendor@test.com', '$2b$10$someHashedPassword');
 >
 > INSERT INTO bikes (vendor_id, model, price_per_hour, price_per_day, location, availability, engine_cc, bike_type)
 > VALUES
 >   (1, 'Activa 6G',  80,  500,  'Pune',   TRUE, 110, 'scooter'),
->   (1, 'Royal Enfield Classic 350', 200, 1200, 'Mumbai', TRUE, 350, 'cruiser'),
->   (1, 'Ather 450X', 120, 700, 'Bangalore', TRUE, 0, 'electric'),
->   (1, 'Pulsar NS200', 150, 900, 'Delhi', TRUE, 200, 'sports');
+>   (1, 'Royal Enfield Classic 350', 200, 1200, 'Mumbai', TRUE, 350, 'cruiser');
 > ```
 
 ---
@@ -98,7 +106,7 @@ Backend will be available at: **http://localhost:5000**
    - API Secret
 3. Paste these into your `backend/.env`
 
-License images uploaded via `POST /api/upload-license` will be stored in the `bike_rental/licenses/` folder in your Cloudinary account.
+License images uploaded via KYC `POST /api/upload-license` will be stored in the `bike_rental/licenses/` folder in your Cloudinary account.
 
 ---
 
@@ -117,7 +125,7 @@ flutter devices
 
 ### Configure API URL
 
-Open `lib/services/api_service.dart` and update `baseUrl`:
+Open `lib/services/api_service.dart` and `lib/vendor/vendor_api_service.dart` and update `baseUrl`:
 
 ```dart
 // Android emulator (maps to your PC's localhost)
@@ -140,43 +148,23 @@ flutter run
 
 ## 5. API Reference (Quick Test with curl/Postman)
 
-### Register
-```
-POST http://localhost:5000/api/auth/register
-Content-Type: application/json
+### Auth & User
+- `POST /api/auth/register` : User Registration
+- `POST /api/auth/login` : User Login
+- `GET /api/user/profile` : Get User KYC Status
 
-{ "name": "Ravi Kumar", "email": "ravi@test.com", "phone": "9999999999", "password": "test123" }
-```
+### Bikes & Bookings
+- `GET /api/bikes?start_time=ISO&end_time=ISO` : Get strictly available bikes (time-filtered overlap check)
+- `POST /api/bookings` : Create a Booking (auto-confirms)
+- `GET /api/bookings/user/1` : User's Booking History
+- `POST /api/upload-license` : Upload KYC Driving License Image
 
-### Login
-```
-POST http://localhost:5000/api/auth/login
-Content-Type: application/json
-
-{ "email": "ravi@test.com", "password": "test123" }
-```
-→ Copy the `token` from response.
-
-### Get Bikes (requires token)
-```
-GET http://localhost:5000/api/bikes
-Authorization: Bearer <YOUR_TOKEN>
-```
-
-### Create Booking (requires token)
-```
-POST http://localhost:5000/api/bookings
-Authorization: Bearer <YOUR_TOKEN>
-Content-Type: application/json
-
-{ "bike_id": 1, "start_time": "2026-03-15T09:00:00", "end_time": "2026-03-15T13:00:00" }
-```
-
-### Get User Bookings (requires token)
-```
-GET http://localhost:5000/api/bookings/user/1
-Authorization: Bearer <YOUR_TOKEN>
-```
+### Vendor
+- `POST /api/vendor/register` : Vendor Registration
+- `POST /api/vendor/login` : Vendor Login
+- `GET /api/vendor/bikes` : Vendor's Fleet
+- `GET /api/vendor/bookings` : View all bookings for Vendor's bikes
+- `PATCH /api/vendor/bookings/:id/status` : Update booking status (active, completed, cancelled)
 
 ---
 
@@ -185,20 +173,18 @@ Authorization: Bearer <YOUR_TOKEN>
 ```
 Prototype/
 ├── backend/                  ← Node.js Express API
-│   ├── config/
-│   │   ├── db.js             ← PostgreSQL connection pool
-│   │   └── schema.sql        ← Database schema (run once)
-│   ├── controllers/          ← Business logic
+│   ├── config/               ← DB setup & migrations
+│   ├── controllers/          ← user, bike, booking, vendor logic
 │   ├── middleware/           ← JWT auth check
-│   ├── models/               ← Database query functions
-│   ├── routes/               ← API endpoint routing
-│   ├── uploads/              ← Temp upload folder
-│   ├── .env.example          ← Config template
+│   ├── models/               ← Database SQL query functions
+│   ├── routes/               ← Express routers
+│   ├── uploads/              ← Temp image uploads
 │   └── server.js             ← App entry point
 │
 └── frontend/                 ← Flutter mobile app
     └── lib/
         ├── main.dart         ← App entry + routing
-        ├── screens/          ← 6 UI screens
-        └── services/         ← API + recommendation logic
+        ├── screens/          ← User UI (Auth, KYC, Booking, Payment, History)
+        ├── vendor/           ← Vendor UI (Auth, Dashboard, Fleet Mgmt, Bookings)
+        └── services/         ← API Service Integrations
 ```
